@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 AUDIO_DIR = os.path.join(os.path.dirname(__file__), "static", "audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
 API_KEY_FROM_ENV = os.getenv("OPENAI_API_KEY", "")
@@ -108,8 +109,8 @@ def reformater_texte(texte: str) -> str:
     return "\n".join(resultat)
 
 
-def _build_prompt(traduire: bool) -> str:
-    langue = "en français" if traduire else "dans la langue d'origine du texte"
+def _build_prompt(langue: str) -> str:
+    langue = {"fr": "en français", "en": "en anglais"}.get(langue, "dans la langue d'origine du texte")
     return f"""\
 Tu es un rédacteur spécialisé en contenus audio de formation. \
 Transforme le texte brut fourni en narration fluide prête pour une synthèse vocale. \
@@ -126,12 +127,12 @@ Règles strictes :
 """
 
 
-def _reformater_chunk_ia(chunk: str, client, numero: int, total: int, traduire: bool) -> str:
+def _reformater_chunk_ia(chunk: str, client, numero: int, total: int, langue: str) -> str:
     contexte = f"[Partie {numero}/{total} — continue la numérotation des chapitres]\n\n" if total > 1 else ""
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": _build_prompt(traduire)},
+            {"role": "system", "content": _build_prompt(langue)},
             {"role": "user", "content": contexte + chunk},
         ],
         temperature=0.4,
@@ -279,13 +280,13 @@ def reformater():
     texte = data.get("texte", "")
     api_key = data.get("api_key", "").strip() or API_KEY_FROM_ENV
     mode_ia = data.get("mode_ia", False)
-    traduire = data.get("traduire", False)
+    langue = data.get("langue", "fr")
 
     if mode_ia and api_key:
         try:
             morceaux = _decouper_gpt(texte)
             client = OpenAI(api_key=api_key)
-            parties = [_reformater_chunk_ia(m, client, i + 1, len(morceaux), traduire) for i, m in enumerate(morceaux)]
+            parties = [_reformater_chunk_ia(m, client, i + 1, len(morceaux), langue) for i, m in enumerate(morceaux)]
             texte_reformate = "\n\n".join(parties)
         except Exception as e:
             return jsonify({"erreur": str(e)}), 500
@@ -302,7 +303,7 @@ def generer():
     api_key = data.get("api_key", "").strip() or API_KEY_FROM_ENV
     do_reformater = data.get("reformater", True)
     mode_ia = data.get("mode_ia", False)
-    traduire = data.get("traduire", False)
+    langue = data.get("langue", "fr")
     voix = data.get("voix", "nova")
     titre = data.get("titre", "").strip()
 
@@ -338,7 +339,7 @@ def generer():
                     parties = []
                     for idx, morceau in enumerate(gpt_morceaux, 1):
                         yield f"data: {_j.dumps({'etape_ia': True, 'gpt_partie': idx, 'gpt_total': len(gpt_morceaux)})}\n\n"
-                        parties.append(_reformater_chunk_ia(morceau, client, idx, len(gpt_morceaux), traduire))
+                        parties.append(_reformater_chunk_ia(morceau, client, idx, len(gpt_morceaux), langue))
                     texte_final = "\n\n".join(parties)
                 else:
                     texte_final = reformater_texte(texte)

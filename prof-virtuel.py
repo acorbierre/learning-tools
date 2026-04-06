@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import math
 import random
@@ -11,6 +12,7 @@ import anthropic
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 SLITE_API_KEY = os.getenv("SLITE_API_KEY", "")
 SLITE_FOLDER_ID = os.getenv("SLITE_FOLDER_ID", "")
@@ -134,6 +136,27 @@ def index():
     return render_template("prof-virtuel.html")
 
 
+@app.route("/fetch-gdoc", methods=["POST"])
+def fetch_gdoc():
+    data = request.get_json() or {}
+    url = data.get("url", "").strip()
+    m = re.search(r"/document/d/([a-zA-Z0-9_-]+)", url)
+    if not m:
+        return jsonify({"erreur": "URL Google Docs invalide."}), 400
+    doc_id = m.group(1)
+    export_url = f"https://docs.google.com/document/d/{doc_id}/export?format=txt"
+    try:
+        req = urllib.request.Request(export_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            contenu = r.read().decode("utf-8", errors="replace")
+            titre = dict(r.headers).get("Content-Disposition", "")
+            m2 = re.search(r'filename\*?=["\']?(?:UTF-8\'\')?([^"\';\n]+)', titre)
+            titre = m2.group(1).strip().rstrip(".txt") if m2 else "Document Google"
+        return jsonify({"titre": titre, "contenu": contenu})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+
 @app.route("/generer-qcm", methods=["POST"])
 def generer_qcm():
     data = request.get_json() or {}
@@ -145,19 +168,24 @@ def generer_qcm():
     channel_id = THEMES.get(theme, SLITE_FOLDER_ID)
     note_id = data.get("note_id", "")
     note_ids = data.get("note_ids", [])
+    gdoc_content = data.get("gdoc_content", "")
+    gdoc_title = data.get("gdoc_title", "Document Google")
 
-    if not channel_id:
-        return jsonify({"erreur": "SLITE_FOLDER_ID manquant dans le .env"}), 400
-    if not SLITE_API_KEY or "COLLE" in SLITE_API_KEY:
-        return jsonify({"erreur": "Clé API Slite non configurée dans le .env"}), 500
+    if not gdoc_content:
+        if not channel_id:
+            return jsonify({"erreur": "SLITE_FOLDER_ID manquant dans le .env"}), 400
+        if not SLITE_API_KEY or "COLLE" in SLITE_API_KEY:
+            return jsonify({"erreur": "Clé API Slite non configurée dans le .env"}), 500
     if not ANTHROPIC_API_KEY or "COLLE" in ANTHROPIC_API_KEY:
         return jsonify({"erreur": "Clé API Anthropic non configurée dans le .env"}), 500
 
     def stream():
         import json as _j
 
-        # Étape 1 : récupérer les notes Slite
-        if note_ids:
+        # Étape 1 : source du contenu
+        if gdoc_content:
+            notes = [{"title": gdoc_title, "content": gdoc_content, "url": ""}]
+        elif note_ids:
             yield f"data: {_j.dumps({'etape': 'slite', 'msg': 'Récupération des notes de révision…'})}\n\n"
             notes = []
             for nid in note_ids:

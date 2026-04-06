@@ -222,6 +222,7 @@
       font-weight: 600;
     }
 
+
     /* Compteur */
     .compteur { text-align: right; font-size: 0.78rem; color: var(--text-dim); margin-top: 0.35rem; }
     .compteur.alerte { color: #f59e0b; }
@@ -362,98 +363,94 @@
       {% endfor %}
     </div>
     <input type="hidden" id="voixSelectionnee" value="nova" />
-    <div id="audioPreview" style="display:none; margin-top:0.8rem">
-      <audio id="playerPreview" controls style="width:100%;border-radius:10px"></audio>
-    </div>
+    <audio id="playerPreview"></audio>
   </div>
 
   <!-- Texte -->
   <div class="card">
     <div class="card-title">Contenu</div>
 
-    <!-- Toggle Doc Slite / Google Doc / Texte -->
+    <!-- Toggle Source -->
     <div style="margin-bottom:1rem">
       <label style="margin-bottom:0.5rem; color:var(--text)">Source</label>
-      <div class="toggle-group" style="max-width:340px; white-space:nowrap">
+      <div class="toggle-group" style="white-space:nowrap">
         <input type="radio" name="sourceMode" id="sourceModeUrl" value="url" checked />
         <label for="sourceModeUrl">Doc Slite</label>
         <input type="radio" name="sourceMode" id="sourceModeGdoc" value="gdoc" />
         <label for="sourceModeGdoc">Google Doc</label>
         <input type="radio" name="sourceMode" id="sourceModeTexte" value="texte" />
-        <label for="sourceModeTexte">Texte</label>
+        <label for="sourceModeTexte">Texte brut</label>
       </div>
     </div>
 
     <!-- Zone URL Slite -->
-    <div id="zoneUrl">
+    <div id="zoneUrl" style="margin-bottom:1rem">
       <label style="margin-bottom:0.4rem">Saisir l'URL du document</label>
       <input type="text" id="sliteUrl" placeholder="https://app.slite.com/app/docs/…" />
       <div id="fetchStatus" style="margin-top:0.5rem"></div>
     </div>
 
     <!-- Zone Google Doc -->
-    <div id="zoneGdoc" style="display:none">
+    <div id="zoneGdoc" style="display:none; margin-bottom:1rem">
       <label style="margin-bottom:0.4rem">Saisir l'URL du document</label>
       <input type="text" id="gdocUrl" placeholder="https://docs.google.com/document/d/…" />
       <div id="fetchGdocStatus" style="margin-top:0.5rem"></div>
     </div>
 
     <!-- Zone Texte -->
-    <div id="zoneTexte" style="display:none">
+    <div id="zoneTexte" style="display:none; margin-bottom:1rem">
       <textarea id="texte" placeholder="## 🎯 Introduction&#10;Colle tes notes ici…&#10;&#10;• Point clé 1&#10;• Point clé 2 (Deci & Ryan, 2000)"></textarea>
       <div class="compteur" id="compteur">0 caractère</div>
     </div>
 
-    <div class="options-row" style="margin-top:1.6rem">
-      <!-- Reformatage -->
-      <div>
+    <div style="margin-top:1.6rem; display:flex; align-items:flex-end; gap:1rem; flex-wrap:wrap">
+      <!-- Reformulation -->
+      <div style="flex:1; min-width:200px">
         <div class="tooltip-wrap" style="margin-bottom:0.5rem">
-          <span style="font-size:0.85rem; color:var(--text)">Reformulation</span>
-          <span class="tooltip-icon" data-tip="Niveau de reformulation autorisé pour adapter les notes à l'écoute audio.&#10;Aucune : le texte est envoyé tel quel.&#10;Basique : titres, listes et emojis convertis en prose simple.&#10;Narration IA : GPT-4o-mini reformule le texte en narration fluide, idéale pour une écoute naturelle.">?</span>
+          <span style="font-size:0.85rem; color:var(--text)">Reformulation IA</span>
+          <span class="tooltip-icon" data-tip="Niveau de reformulation autorisé pour adapter les notes à l'écoute audio :&#10;-- Aucune : le texte est converti tel quel en flux audio.&#10;-- Basique : titres, listes et emojis sont convertis en prose simple.&#10;-- Narrative : l'IA reformule le texte en narration fluide et chapitrée, idéale pour une écoute naturelle.">?</span>
         </div>
-        <div class="toggle-group">
+        <div class="toggle-group" style="width:100%">
           <input type="radio" name="mode" id="modeAucun" value="aucun" />
           <label for="modeAucun">Aucune</label>
           <input type="radio" name="mode" id="modeBasique" value="basique" />
           <label for="modeBasique">Basique</label>
           <input type="radio" name="mode" id="modeIa" value="ia" checked />
-          <label for="modeIa">Narration IA</label>
+          <label for="modeIa">Narrative</label>
         </div>
       </div>
 
       <!-- Langue -->
-      <div>
-        <label style="margin-bottom:0.5rem; color:var(--text)">Langue de sortie</label>
+      <div style="flex-shrink:0">
+        <label style="display:block; margin-bottom:0.5rem; color:var(--text); font-size:0.85rem">Langue</label>
         <div class="toggle-group">
-          <input type="radio" name="langue" id="langueOrigine" value="origine" checked />
-          <label for="langueOrigine">Originale</label>
-          <input type="radio" name="langue" id="langueFr" value="fr" />
-          <label for="langueFr">Français</label>
+          <input type="radio" name="langue" id="langueFr" value="fr" checked />
+          <label for="langueFr">FR</label>
+          <input type="radio" name="langue" id="langueEn" value="en" />
+          <label for="langueEn">ENG</label>
         </div>
+      </div>
+
+      <!-- Nom du fichier MP3 -->
+      <div style="width:220px; flex-shrink:0">
+        <label for="titreMP3" style="margin-bottom:0.5rem; color:var(--text)">Nom du fichier MP3</label>
+        <input type="text" id="titreMP3" placeholder="ex: module-1-introduction" style="margin:0" />
       </div>
     </div>
 
-    <div style="margin-top:1.6rem">
-      <label for="titreMP3" style="color:var(--text)">Nom du fichier MP3</label>
-      <input type="text" id="titreMP3" placeholder="ex: module-1-introduction" />
-    </div>
 
   </div>
 
   <!-- Actions -->
-  <div class="row" style="margin-top:0">
-    <button class="btn btn-ghost" style="font-size:1rem; padding:0.75rem 1.5rem" onclick="apercu()">Aperçu texte</button>
-    <button class="btn btn-primary" style="font-size:1rem; padding:0.75rem 1.5rem" id="btnGenerer" onclick="generer()">Générer le MP3</button>
+  <div style="margin-top:0; display:flex; align-items:center; gap:0.5rem">
+    <button class="btn btn-primary" style="font-size:0.88rem; padding:0.75rem 1.5rem" id="btnGenerer" onclick="generer()">Générer le MP3</button>
+    <button class="btn btn-ghost" style="font-size:0.88rem; padding:0.75rem 1.5rem" onclick="apercu()">Aperçu texte</button>
   </div>
 
-  <!-- Aperçu -->
-  <div class="card" id="carteApercu" style="display:none">
-    <div class="card-title">Aperçu du texte reformaté</div>
-    <div class="apercu-box" id="apercuTexte"></div>
-  </div>
+  <div id="apercuTexte" style="display:none; margin-top:1rem; white-space:pre-wrap; font-size:0.88rem; line-height:1.6; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:1rem; max-height:300px; overflow-y:auto"></div>
 
   <!-- Résultat -->
-  <div id="resultat"></div>
+  <div id="resultat" style="margin-top:1.5rem"></div>
 
 </div>
 
@@ -558,7 +555,27 @@
     document.getElementById("voixSelectionnee").value = id;
   }
 
+  let currentPreviewBtn = null;
+  const playerPreview = document.getElementById("playerPreview");
+
+  function resetPreviewBtn(btn) {
+    if (btn) { btn.classList.remove("loading"); btn.textContent = "▶ Écouter"; }
+  }
+
+  playerPreview.addEventListener("ended", () => { resetPreviewBtn(currentPreviewBtn); currentPreviewBtn = null; });
+
   async function previewVoix(voix, btn) {
+    // Toggle : si ce bouton est en lecture, on arrête
+    if (currentPreviewBtn === btn) {
+      playerPreview.pause();
+      playerPreview.currentTime = 0;
+      resetPreviewBtn(btn);
+      currentPreviewBtn = null;
+      return;
+    }
+    // Arrêter l'éventuel autre bouton actif
+    if (currentPreviewBtn) { resetPreviewBtn(currentPreviewBtn); currentPreviewBtn = null; }
+
     btn.classList.add("loading");
     btn.textContent = "…";
     try {
@@ -570,19 +587,18 @@
       const data = await res.json();
       if (data.erreur) {
         alert("Erreur : " + data.erreur);
+        resetPreviewBtn(btn);
       } else {
         selectionnerVoix(voix);
-        const wrap = document.getElementById("audioPreview");
-        const player = document.getElementById("playerPreview");
-        player.src = data.url + "?t=" + Date.now();
-        wrap.style.display = "block";
-        player.play();
+        playerPreview.src = data.url + "?t=" + Date.now();
+        playerPreview.play();
+        btn.classList.remove("loading");
+        btn.textContent = "⏸ Arrêter";
+        currentPreviewBtn = btn;
       }
     } catch(e) {
       alert("Erreur réseau : " + e.message);
-    } finally {
-      btn.classList.remove("loading");
-      btn.textContent = "▶ Écouter";
+      resetPreviewBtn(btn);
     }
   }
 
@@ -591,24 +607,47 @@
     const mode = getMode();
     if (!texte) return;
 
-    const carteEl = document.getElementById("carteApercu");
+    const btn = document.querySelector('[onclick="apercu()"]');
+    const labelOriginal = btn.innerHTML;
     const apercuEl = document.getElementById("apercuTexte");
-    carteEl.style.display = "block";
-    apercuEl.textContent = mode === "ia" ? "Reformatage IA en cours…" : mode === "aucun" ? texte : "…";
-    if (mode === "aucun") { carteEl.scrollIntoView({ behavior: "smooth" }); return; }
 
-    const res = await fetch("/reformater", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        texte,
-        mode_ia: mode === "ia",
-        traduire: getLangue() === "fr",
-      }),
-    });
-    const data = await res.json();
-    apercuEl.textContent = data.erreur ? "Erreur : " + data.erreur : data.texte_reformate;
-    carteEl.scrollIntoView({ behavior: "smooth" });
+    if (mode === "aucun") {
+      apercuEl.textContent = texte;
+      apercuEl.style.display = "block";
+      apercuEl.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    const duree = mode === "ia" ? "~1 min" : "~10 sec";
+    btn.innerHTML = '<span class="spinner"></span> Chargement… (' + duree + ')';
+    btn.disabled = true;
+    try {
+      const res = await fetch("/reformater", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texte, mode_ia: mode === "ia", langue: getLangue() }),
+      });
+      const data = await res.json();
+      if (data.erreur) { alert("Erreur : " + data.erreur); return; }
+      apercuEl.textContent = data.texte_reformate;
+      apercuEl.style.display = "block";
+      apercuEl.scrollIntoView({ behavior: "smooth" });
+    } finally {
+      btn.innerHTML = labelOriginal;
+      btn.disabled = false;
+    }
+  }
+
+  function estimerDuree(texte, mode) {
+    const chars = texte.length;
+    const chunksGpt = Math.ceil(chars / 12000);
+    const chunksTts = Math.ceil(chars / 4000);
+    let sec = chunksTts * 6; // ~6s par chunk TTS
+    if (mode === "ia")     sec += chunksGpt * 25; // ~25s par chunk GPT + assemblage
+    else if (mode === "basique") sec += 3;
+    if (sec < 30)  return "~" + sec + " sec";
+    if (sec < 90)  return "~1 min";
+    return "~" + Math.round(sec / 60) + " min";
   }
 
   async function generer() {
@@ -620,7 +659,7 @@
     if (!texte) { afficherStatus("erreur", "Le champ de texte est vide."); return; }
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Génération…';
+    btn.innerHTML = '<span class="spinner"></span> Génération… (' + estimerDuree(texte, mode) + ')';
     const msgInit = mode === "ia" ? "Reformatage IA en cours…" : "Synthèse vocale en cours…";
     afficherStatus("info", msgInit);
 
@@ -632,7 +671,7 @@
           texte,
           reformater: mode !== "aucun",
           mode_ia: mode === "ia",
-          traduire: getLangue() === "fr",
+          langue: getLangue(),
           voix: getVoix(),
           titre: document.getElementById("titreMP3").value.trim(),
         }),
@@ -665,7 +704,7 @@
           } else if (data.succes) {
             resultatEl.innerHTML = `
               <div class="card">
-                <div class="card-title">Résultat</div>
+                <div class="card-title">Votre fichier est prêt !</div>
                 <div class="status succes">MP3 généré${data.nb_morceaux > 1 ? ` en ${data.nb_morceaux} parties assemblées` : ""}.</div>
                 <audio controls src="${data.url}?t=${Date.now()}"></audio>
                 <br/>

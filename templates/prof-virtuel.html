@@ -425,24 +425,48 @@
   <div id="ecranAccueil">
     <div style="font-size:2.8rem; margin-bottom:0.5rem">🥸</div>
     <h1>Interro surprise</h1>
-    <p class="subtitle">Génère un QCM à partir de tes notes Slite</p>
+    <p class="subtitle">Génère un QCM à partir de tes notes</p>
 
     <!-- Thématique -->
     <div class="card">
-      <div class="card-title">Thématique</div>
-      <div class="toggle-group">
-        <input type="radio" name="theme" id="theme-ergo" value="ergo" checked />
-        <label for="theme-ergo">Ergo IHM / FH</label>
-        <input type="radio" name="theme" id="theme-psycho" value="psycho" />
-        <label for="theme-psycho">Psycho cognitive</label>
-        <input type="radio" name="theme" id="theme-recherche" value="recherche" />
-        <label for="theme-recherche">Recherche</label>
-        <input type="radio" name="theme" id="theme-cnam" value="cnam" />
-        <label for="theme-cnam">Cours CNAM</label>
+      <div class="card-title">Source</div>
+
+      <!-- Source : Slite / Google Doc -->
+      <div class="toggle-group" style="margin-bottom:1rem">
+        <input type="radio" name="sourceMode" id="sourceSlite" value="slite" checked />
+        <label for="sourceSlite">Docs Slite</label>
+        <input type="radio" name="sourceMode" id="sourceGdoc" value="gdoc" />
+        <label for="sourceGdoc">Google Doc</label>
       </div>
-      <select class="doc-select" id="docSelect">
-        <option value="">Choisir un document Slite…</option>
-      </select>
+
+      <!-- Zone Slite -->
+      <div id="zoneSlite" style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem">
+        <div>
+          <label style="display:block; font-size:0.82rem; color:var(--text-muted); margin-bottom:0.4rem">Thématique</label>
+          <select class="doc-select" id="themeSelect" style="margin-top:0; width:100%">
+            <option value="">Choisir une thématique…</option>
+            <option value="ergo">Ergo IHM / FH</option>
+            <option value="psycho">Psycho cognitive</option>
+            <option value="recherche">Recherche</option>
+            <option value="cnam">Cours CNAM</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block; font-size:0.82rem; color:var(--text-muted); margin-bottom:0.4rem">Document</label>
+          <select class="doc-select" id="docSelect" style="margin-top:0; width:100%; opacity:0.4; pointer-events:none">
+            <option value="">Choisir un document Slite…</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Zone Google Doc -->
+      <div id="zoneGdoc" style="display:none">
+        <label style="display:block; font-size:0.82rem; color:var(--text-muted); margin-bottom:0.4rem">Saisir l'URL du document partagé</label>
+        <input type="text" id="gdocUrl" placeholder="https://docs.google.com/document/d/…"
+          style="width:100%; background:var(--surface); border:1.5px solid var(--border); border-radius:12px; color:var(--text); font-family:inherit; font-size:0.92rem; padding:0.75rem 1rem; outline:none; transition:border-color 0.15s"
+          onfocus="this.style.borderColor='var(--border-hover)'" onblur="this.style.borderColor='var(--border)'" />
+        <div id="gdocStatus" style="margin-top:0.5rem"></div>
+      </div>
 
       <!-- Mode révision -->
       <label class="toggle-row" for="toggleRevision" style="justify-content:flex-start; margin-top:1rem">
@@ -478,7 +502,7 @@
       </label>
     </div>
 
-    <button class="btn btn-primary" id="btnGenerer" onclick="lancerQCM()">Générer le QCM</button>
+    <button class="btn btn-primary" id="btnGenerer" onclick="lancerQCM()" style="margin-top:0.8rem">Générer le QCM</button>
     <div id="statusAccueil"></div>
   </div>
 
@@ -553,8 +577,17 @@
     return ids;
   }
 
-  function getTheme() { return document.querySelector('input[name="theme"]:checked').value; }
+  function getTheme() { return document.getElementById("themeSelect")?.value || "ergo"; }
   function getNbQuestions() { return parseInt(document.querySelector('input[name="nbq"]:checked').value); }
+  function getSourceMode() { return document.querySelector('input[name="sourceMode"]:checked').value; }
+
+  // Toggle Slite / Google Doc
+  document.querySelectorAll('input[name="sourceMode"]').forEach(r => {
+    r.addEventListener("change", () => {
+      document.getElementById("zoneSlite").style.display = r.value === "slite" ? "grid" : "none";
+      document.getElementById("zoneGdoc").style.display  = r.value === "gdoc"  ? "block" : "none";
+    });
+  });
 
   document.querySelectorAll('input[name="nbq"]').forEach(r => {
     r.addEventListener("change", () => {
@@ -574,6 +607,7 @@
   function filtrerSelect(theme) {
     const sel = document.getElementById("docSelect");
     sel.innerHTML = '<option value="">Choisir un document Slite…</option>';
+    if (!theme) return;
     const notes = allNotes[theme] || [];
     notes.forEach(n => {
       const opt = document.createElement("option");
@@ -583,17 +617,19 @@
     });
   }
 
-  // Filtrer au clic sur un pill
-  document.querySelectorAll('input[name="theme"]').forEach(r => {
-    r.addEventListener("change", () => filtrerSelect(r.value));
+  // Filtrer au changement de thématique + activer docSelect
+  document.getElementById("themeSelect").addEventListener("change", function() {
+    filtrerSelect(this.value);
+    const docSel = document.getElementById("docSelect");
+    if (this.value) { docSel.style.opacity = "1"; docSel.style.pointerEvents = "auto"; }
+    else            { docSel.style.opacity = "0.4"; docSel.style.pointerEvents = "none"; }
   });
 
-  // Charger tous les docs au démarrage puis filtrer sur le thème par défaut
+  // Charger tous les docs au démarrage
   (async function chargerNotes() {
     try {
       const res = await fetch("/lister-notes");
       allNotes = await res.json();
-      filtrerSelect(getTheme());
     } catch(e) { /* silencieux */ }
   })();
 
@@ -601,19 +637,41 @@
     const btn = document.getElementById("btnGenerer");
     currentTheme = getTheme();
     const enRevision = document.getElementById("toggleRevision").checked;
+    const sourceMode = getSourceMode();
 
     let revisionNoteIds = [];
-    if (enRevision) {
-      revisionNoteIds = getRevisionNoteIds();
-      if (!revisionNoteIds.length) {
-        afficherStatus("erreur", "Aucune question ratée enregistrée. Fais d'abord un quiz normal !");
-        return;
-      }
-    }
+    let gdocContent = "", gdocTitle = "";
 
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> En cours…';
-    afficherStatus("info", "Connexion à Slite…");
+    if (sourceMode === "gdoc") {
+      const url = document.getElementById("gdocUrl").value.trim();
+      if (!url) { afficherStatus("erreur", "Saisis l'URL du Google Doc."); return; }
+      btn.disabled = true;
+      const dureeGdoc = getNbQuestions() <= 10 ? "~20 sec" : "~30 sec";
+      btn.innerHTML = `<span class="spinner"></span> En cours… (${dureeGdoc})`;
+      afficherStatus("info", "Récupération du Google Doc…");
+      try {
+        const r = await fetch("/fetch-gdoc", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        const d = await r.json();
+        if (d.erreur) { afficherStatus("erreur", d.erreur); btn.disabled = false; btn.textContent = "Générer le QCM"; return; }
+        gdocContent = d.contenu;
+        gdocTitle = d.titre;
+      } catch(e) { afficherStatus("erreur", "Erreur réseau : " + e.message); btn.disabled = false; btn.textContent = "Générer le QCM"; return; }
+    } else {
+      if (enRevision) {
+        revisionNoteIds = getRevisionNoteIds();
+        if (!revisionNoteIds.length) {
+          afficherStatus("erreur", "Aucune question ratée enregistrée. Fais d'abord un quiz normal !");
+          return;
+        }
+      }
+      btn.disabled = true;
+      const dureeSlite = getNbQuestions() <= 10 ? "~20 sec" : "~30 sec";
+      btn.innerHTML = `<span class="spinner"></span> En cours… (${dureeSlite})`;
+      afficherStatus("info", "Connexion à Slite…");
+    }
 
     try {
       const res = await fetch("/generer-qcm", {
@@ -625,6 +683,8 @@
           theme: getTheme(),
           note_id: enRevision ? "" : document.getElementById("docSelect").value,
           note_ids: revisionNoteIds,
+          gdoc_content: gdocContent,
+          gdoc_title: gdocTitle,
         }),
       });
 
