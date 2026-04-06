@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synthèse Audio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --surface2: #f0f0f0;
+      --border: #e0e0e0;
+      --border-hover: #aaa;
+      --text: #0a0a0a;
+      --text-muted: #666;
+      --text-dim: #aaa;
+      --accent: #000000;
+      --radius-card: 16px;
+      --radius-btn: 999px;
+      --radius-input: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2.5rem 1rem 4rem;
+      line-height: 1.6;
+    }
+
+    .container { max-width: 780px; margin: 0 auto; }
+
+    /* Header */
+    header { text-align: center; margin-bottom: 3rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.92rem; }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 1.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+
+    /* Inputs */
+    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+
+    input[type="password"],
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-input);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.92rem;
+      padding: 0.75rem 1rem;
+      transition: border-color 0.15s;
+      appearance: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--border-hover);
+    }
+
+    textarea { resize: vertical; min-height: 220px; line-height: 1.6; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border: none;
+      border-radius: var(--radius-btn);
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.6rem 1.3rem;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: #000; color: #fff; }
+    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--border-hover); }
+
+    .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.8rem; }
+
+    /* Row */
+    .row { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
+
+    /* API key status */
+    .key-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: #4ade80;
+      background: rgba(74,222,128,0.08);
+      border: 1px solid rgba(74,222,128,0.2);
+      border-radius: 999px;
+      padding: 0.3rem 0.8rem;
+      margin-bottom: 0.9rem;
+    }
+    .key-badge::before { content: "●"; font-size: 0.6rem; }
+
+    /* Voice grid */
+    .voice-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 600px) { .voice-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .voice-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 0.5rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.2rem;
+    }
+
+    .voice-card:hover { border-color: var(--border-hover); }
+    .voice-card.active { border-color: #000; background: #f0f0f0; }
+
+    .voice-card .emoji { font-size: 1.6rem; line-height: 1; }
+    .voice-card .name { font-weight: 700; font-size: 0.95rem; }
+    .voice-card .desc { font-size: 0.7rem; color: var(--text-muted); line-height: 1.3; }
+
+    .voice-card .preview-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.4rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .voice-card .preview-btn:hover { color: var(--text); border-color: var(--border-hover); }
+    .voice-card .preview-btn.loading { opacity: 0.5; cursor: wait; }
+
+    /* Options row */
+    .options-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin-top: 0.8rem;
+    }
+    @media (max-width: 500px) { .options-row { grid-template-columns: 1fr; } }
+
+    /* Toggle */
+    .toggle-group {
+      display: flex;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 2px;
+    }
+
+    .toggle-group label {
+      flex: 1;
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      cursor: pointer;
+      margin: 0;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+    }
+
+    .toggle-group input[type="radio"] { display: none; }
+
+    .toggle-group input[type="radio"]:checked + label {
+      background: #000;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* Compteur */
+    .compteur { text-align: right; font-size: 0.78rem; color: var(--text-dim); margin-top: 0.35rem; }
+    .compteur.alerte { color: #f59e0b; }
+
+    /* Status */
+    .status {
+      font-size: 0.88rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      margin-top: 0.8rem;
+    }
+    .status.info    { background: rgba(99,102,241,0.1); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+    .status.succes  { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .status.erreur  { background: rgba(239,68,68,0.08); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* Aperçu */
+    .apercu-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 0.88rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: var(--text-muted);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* Download */
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      background: #000;
+      color: #fff;
+      text-decoration: none;
+      padding: 0.65rem 1.4rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: opacity 0.15s;
+    }
+    .download-link:hover { opacity: 0.85; }
+
+    audio {
+      width: 100%;
+      margin-top: 0.9rem;
+      border-radius: 10px;
+      filter: none;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .btn-ghost .spinner { border-color: rgba(0,0,0,0.2); border-top-color: #000; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    details summary { cursor: pointer; font-size: 0.82rem; color: var(--text-dim); margin-top: 1rem; }
+    details summary:hover { color: var(--text-muted); }
+
+    /* Tooltip */
+    .tooltip-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .tooltip-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: var(--border);
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      font-weight: 700;
+      cursor: default;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .tooltip-icon::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 400;
+      line-height: 1.5;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      white-space: pre-line;
+      width: 240px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 100;
+    }
+    .tooltip-icon:hover::after { opacity: 1; }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 0.2rem 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div style="font-size:2.8rem; margin-bottom:0.5rem">🎙️</div>
+    <h1>Synthèse Audio</h1>
+    <p>Transforme tes notes en narration MP3 avec les voix OpenAI</p>
+  </header>
+
+  <!-- Voix -->
+  <div class="card">
+    <div class="card-title">Voix</div>
+    <div class="voice-grid">
+      {% for id, v in voix.items() %}
+      <div class="voice-card {% if id == 'nova' %}active{% endif %}"
+           id="card-{{ id }}" onclick="selectionnerVoix('{{ id }}')">
+        <div class="emoji">{{ v.emoji }}</div>
+        <div class="name">{{ v.label }}</div>
+        <div class="desc">{{ v.desc }}</div>
+        <button class="preview-btn" onclick="event.stopPropagation(); previewVoix('{{ id }}', this)">
+          ▶ Écouter
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    <input type="hidden" id="voixSelectionnee" value="nova" />
+    <div id="audioPreview" style="display:none; margin-top:0.8rem">
+      <audio id="playerPreview" controls style="width:100%;border-radius:10px"></audio>
+    </div>
+  </div>
+
+  <!-- Texte -->
+  <div class="card">
+    <div class="card-title">Contenu</div>
+
+    <!-- Toggle Doc Slite / Google Doc / Texte -->
+    <div style="margin-bottom:1rem">
+      <label style="margin-bottom:0.5rem; color:var(--text)">Source</label>
+      <div class="toggle-group" style="max-width:340px; white-space:nowrap">
+        <input type="radio" name="sourceMode" id="sourceModeUrl" value="url" checked />
+        <label for="sourceModeUrl">Doc Slite</label>
+        <input type="radio" name="sourceMode" id="sourceModeGdoc" value="gdoc" />
+        <label for="sourceModeGdoc">Google Doc</label>
+        <input type="radio" name="sourceMode" id="sourceModeTexte" value="texte" />
+        <label for="sourceModeTexte">Texte</label>
+      </div>
+    </div>
+
+    <!-- Zone URL Slite -->
+    <div id="zoneUrl">
+      <label style="margin-bottom:0.4rem">Saisir l'URL du document</label>
+      <input type="text" id="sliteUrl" placeholder="https://app.slite.com/app/docs/…" />
+      <div id="fetchStatus" style="margin-top:0.5rem"></div>
+    </div>
+
+    <!-- Zone Google Doc -->
+    <div id="zoneGdoc" style="display:none">
+      <label style="margin-bottom:0.4rem">Saisir l'URL du document</label>
+      <input type="text" id="gdocUrl" placeholder="https://docs.google.com/document/d/…" />
+      <div id="fetchGdocStatus" style="margin-top:0.5rem"></div>
+    </div>
+
+    <!-- Zone Texte -->
+    <div id="zoneTexte" style="display:none">
+      <textarea id="texte" placeholder="## 🎯 Introduction&#10;Colle tes notes ici…&#10;&#10;• Point clé 1&#10;• Point clé 2 (Deci & Ryan, 2000)"></textarea>
+      <div class="compteur" id="compteur">0 caractère</div>
+    </div>
+
+    <div class="options-row" style="margin-top:1.6rem">
+      <!-- Reformatage -->
+      <div>
+        <div class="tooltip-wrap" style="margin-bottom:0.5rem">
+          <span style="font-size:0.85rem; color:var(--text)">Reformulation</span>
+          <span class="tooltip-icon" data-tip="Niveau de reformulation autorisé pour adapter les notes à l'écoute audio.&#10;Aucune : le texte est envoyé tel quel.&#10;Basique : titres, listes et emojis convertis en prose simple.&#10;Narration IA : GPT-4o-mini reformule le texte en narration fluide, idéale pour une écoute naturelle.">?</span>
+        </div>
+        <div class="toggle-group">
+          <input type="radio" name="mode" id="modeAucun" value="aucun" />
+          <label for="modeAucun">Aucune</label>
+          <input type="radio" name="mode" id="modeBasique" value="basique" />
+          <label for="modeBasique">Basique</label>
+          <input type="radio" name="mode" id="modeIa" value="ia" checked />
+          <label for="modeIa">Narration IA</label>
+        </div>
+      </div>
+
+      <!-- Langue -->
+      <div>
+        <label style="margin-bottom:0.5rem; color:var(--text)">Langue de sortie</label>
+        <div class="toggle-group">
+          <input type="radio" name="langue" id="langueOrigine" value="origine" checked />
+          <label for="langueOrigine">Originale</label>
+          <input type="radio" name="langue" id="langueFr" value="fr" />
+          <label for="langueFr">Français</label>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:1.6rem">
+      <label for="titreMP3" style="color:var(--text)">Nom du fichier MP3</label>
+      <input type="text" id="titreMP3" placeholder="ex: module-1-introduction" />
+    </div>
+
+  </div>
+
+  <!-- Actions -->
+  <div class="row" style="margin-top:0">
+    <button class="btn btn-ghost" style="font-size:1rem; padding:0.75rem 1.5rem" onclick="apercu()">Aperçu texte</button>
+    <button class="btn btn-primary" style="font-size:1rem; padding:0.75rem 1.5rem" id="btnGenerer" onclick="generer()">Générer le MP3</button>
+  </div>
+
+  <!-- Aperçu -->
+  <div class="card" id="carteApercu" style="display:none">
+    <div class="card-title">Aperçu du texte reformaté</div>
+    <div class="apercu-box" id="apercuTexte"></div>
+  </div>
+
+  <!-- Résultat -->
+  <div id="resultat"></div>
+
+</div>
+
+<script>
+  const texteEl = document.getElementById("texte");
+  const compteurEl = document.getElementById("compteur");
+  let texteDepuisUrl = "";
+  let titreDepuisUrl = "";
+
+  texteEl.addEventListener("input", () => {
+    const n = texteEl.value.length;
+    const parties = Math.ceil(n / 4000);
+    compteurEl.textContent = n > 4000
+      ? `${n.toLocaleString()} caractères — ~${parties} parties TTS`
+      : `${n.toLocaleString()} caractère${n > 1 ? "s" : ""}`;
+    compteurEl.className = "compteur" + (n > 30000 ? " alerte" : "");
+  });
+
+  // Toggle Doc Slite / Google Doc / Texte
+  document.querySelectorAll('input[name="sourceMode"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      document.getElementById("zoneUrl").style.display   = radio.value === "url"   ? "block" : "none";
+      document.getElementById("zoneGdoc").style.display  = radio.value === "gdoc"  ? "block" : "none";
+      document.getElementById("zoneTexte").style.display = radio.value === "texte" ? "block" : "none";
+    });
+  });
+
+  // Fetch Slite on URL change
+  document.getElementById("sliteUrl").addEventListener("blur",  fetchSlite);
+  document.getElementById("sliteUrl").addEventListener("paste", () => setTimeout(fetchSlite, 100));
+
+  async function fetchSlite() {
+    const url = document.getElementById("sliteUrl").value.trim();
+    const statusEl = document.getElementById("fetchStatus");
+    if (!url) return;
+    statusEl.innerHTML = `<div class="status info">Récupération en cours…</div>`;
+    try {
+      const res = await fetch("/fetch-slite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (data.erreur) {
+        statusEl.innerHTML = `<div class="status erreur">${data.erreur}</div>`;
+        texteDepuisUrl = "";
+      } else {
+        texteDepuisUrl = data.contenu;
+        titreDepuisUrl = data.titre;
+        statusEl.innerHTML = `<div class="status succes">✓ « ${data.titre} » récupéré (${data.contenu.length.toLocaleString()} caractères)</div>`;
+        if (!document.getElementById("titreMP3").value.trim())
+          document.getElementById("titreMP3").value = data.titre;
+      }
+    } catch(e) {
+      statusEl.innerHTML = `<div class="status erreur">Erreur réseau : ${e.message}</div>`;
+    }
+  }
+
+  // Fetch Google Doc on URL change
+  document.getElementById("gdocUrl").addEventListener("blur",  fetchGdoc);
+  document.getElementById("gdocUrl").addEventListener("paste", () => setTimeout(fetchGdoc, 100));
+
+  async function fetchGdoc() {
+    const url = document.getElementById("gdocUrl").value.trim();
+    const statusEl = document.getElementById("fetchGdocStatus");
+    if (!url) return;
+    statusEl.innerHTML = `<div class="status info">Récupération en cours…</div>`;
+    try {
+      const res = await fetch("/fetch-gdoc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (data.erreur) {
+        statusEl.innerHTML = `<div class="status erreur">${data.erreur}</div>`;
+        texteDepuisUrl = "";
+      } else {
+        texteDepuisUrl = data.contenu;
+        titreDepuisUrl = data.titre;
+        statusEl.innerHTML = `<div class="status succes">✓ « ${data.titre} » récupéré (${data.contenu.length.toLocaleString()} caractères)</div>`;
+        if (!document.getElementById("titreMP3").value.trim())
+          document.getElementById("titreMP3").value = data.titre;
+      }
+    } catch(e) {
+      statusEl.innerHTML = `<div class="status erreur">Erreur réseau : ${e.message}</div>`;
+    }
+  }
+
+  function getTexte() {
+    const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+    return mode === "texte" ? texteEl.value.trim() : texteDepuisUrl;
+  }
+
+  function getMode() { return document.querySelector('input[name="mode"]:checked').value; }
+  function getLangue() { return document.querySelector('input[name="langue"]:checked').value; }
+  function getVoix() { return document.getElementById("voixSelectionnee").value; }
+
+  function selectionnerVoix(id) {
+    document.querySelectorAll(".voice-card").forEach(c => c.classList.remove("active"));
+    document.getElementById("card-" + id).classList.add("active");
+    document.getElementById("voixSelectionnee").value = id;
+  }
+
+  async function previewVoix(voix, btn) {
+    btn.classList.add("loading");
+    btn.textContent = "…";
+    try {
+      const res = await fetch("/preview-voix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voix }),
+      });
+      const data = await res.json();
+      if (data.erreur) {
+        alert("Erreur : " + data.erreur);
+      } else {
+        selectionnerVoix(voix);
+        const wrap = document.getElementById("audioPreview");
+        const player = document.getElementById("playerPreview");
+        player.src = data.url + "?t=" + Date.now();
+        wrap.style.display = "block";
+        player.play();
+      }
+    } catch(e) {
+      alert("Erreur réseau : " + e.message);
+    } finally {
+      btn.classList.remove("loading");
+      btn.textContent = "▶ Écouter";
+    }
+  }
+
+  async function apercu() {
+    const texte = getTexte();
+    const mode = getMode();
+    if (!texte) return;
+
+    const carteEl = document.getElementById("carteApercu");
+    const apercuEl = document.getElementById("apercuTexte");
+    carteEl.style.display = "block";
+    apercuEl.textContent = mode === "ia" ? "Reformatage IA en cours…" : mode === "aucun" ? texte : "…";
+    if (mode === "aucun") { carteEl.scrollIntoView({ behavior: "smooth" }); return; }
+
+    const res = await fetch("/reformater", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        texte,
+        mode_ia: mode === "ia",
+        traduire: getLangue() === "fr",
+      }),
+    });
+    const data = await res.json();
+    apercuEl.textContent = data.erreur ? "Erreur : " + data.erreur : data.texte_reformate;
+    carteEl.scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function generer() {
+    const texte = getTexte();
+    const mode = getMode();
+    const resultatEl = document.getElementById("resultat");
+    const btn = document.getElementById("btnGenerer");
+
+    if (!texte) { afficherStatus("erreur", "Le champ de texte est vide."); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Génération…';
+    const msgInit = mode === "ia" ? "Reformatage IA en cours…" : "Synthèse vocale en cours…";
+    afficherStatus("info", msgInit);
+
+    try {
+      const res = await fetch("/generer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          texte,
+          reformater: mode !== "aucun",
+          mode_ia: mode === "ia",
+          traduire: getLangue() === "fr",
+          voix: getVoix(),
+          titre: document.getElementById("titreMP3").value.trim(),
+        }),
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lignes = buffer.split("\n");
+        buffer = lignes.pop();
+
+        for (const ligne of lignes) {
+          if (!ligne.startsWith("data: ")) continue;
+          const data = JSON.parse(ligne.slice(6));
+
+          if (data.erreur) {
+            afficherStatus("erreur", "Erreur : " + data.erreur);
+          } else if (data.etape_ia) {
+            const msg = data.gpt_total > 1
+              ? `Reformatage IA — partie ${data.gpt_partie} / ${data.gpt_total}…`
+              : "Reformatage IA en cours…";
+            afficherStatus("info", msg);
+          } else if (data.etape) {
+            afficherStatus("info", `Synthèse vocale — partie ${data.etape} / ${data.total}…`);
+          } else if (data.succes) {
+            resultatEl.innerHTML = `
+              <div class="card">
+                <div class="card-title">Résultat</div>
+                <div class="status succes">MP3 généré${data.nb_morceaux > 1 ? ` en ${data.nb_morceaux} parties assemblées` : ""}.</div>
+                <audio controls src="${data.url}?t=${Date.now()}"></audio>
+                <br/>
+                <a class="download-link" href="${data.url}" download="${data.nom_telechargement}">
+                  ↓ Télécharger ${data.nom_telechargement}
+                </a>
+                <details>
+                  <summary>Voir le texte final envoyé à la synthèse vocale</summary>
+                  <div class="apercu-box" style="margin-top:0.6rem">${escapeHtml(data.texte_final)}</div>
+                </details>
+              </div>`;
+            resultatEl.scrollIntoView({ behavior: "smooth" });
+          }
+        }
+      }
+    } catch (err) {
+      afficherStatus("erreur", "Erreur réseau : " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Générer le MP3";
+    }
+  }
+
+  function afficherStatus(type, message) {
+    document.getElementById("resultat").innerHTML =
+      `<div class="status ${type}">${message}</div>`;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+</script>
+</body>
+</html>

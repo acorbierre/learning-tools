@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assistant Formation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --surface2: #f0f0f0;
+      --border: #e0e0e0;
+      --border-hover: #aaa;
+      --text: #0a0a0a;
+      --text-muted: #666;
+      --radius-card: 16px;
+      --radius-btn: 999px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1rem;
+    }
+
+    .container { max-width: 640px; width: 100%; }
+
+    header { text-align: center; margin-bottom: 2.5rem; }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.35rem;
+    }
+
+    /* Grille des outils */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .tool-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 1.4rem;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+    .tool-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+      transform: translateY(-1px);
+    }
+
+    .tool-card .icon { font-size: 2rem; line-height: 1; }
+    .tool-card .name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-top: 0.2rem;
+    }
+    .tool-card .desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .tool-card .arrow {
+      margin-top: auto;
+      padding-top: 0.8rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .tool-card:hover .arrow { color: var(--text); }
+
+    .hub-link {
+      display: block;
+      text-align: center;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-top: 0.4rem;
+      padding: 0.6rem;
+      border-radius: 10px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .hub-link:hover { color: var(--text); background: var(--surface2); }
+
+    /* Bouton Claude Code flottant */
+    .claude-fab {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      height: 44px;
+      padding: 0 1rem 0 0.85rem;
+      border-radius: 999px;
+      background: #CC5500;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      box-shadow: 0 4px 16px rgba(204,85,0,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+      font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.01em;
+    }
+    .claude-fab:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(204,85,0,0.45);
+    }
+    .claude-fab:active { transform: scale(0.97); }
+
+    .claude-fab svg {
+      width: 22px;
+      height: 22px;
+      fill: #fff;
+      flex-shrink: 0;
+    }
+
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: #111;
+      color: #fff;
+      padding: 0.6rem 1.2rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Assistant Formation</h1>
+    <p>Tes outils pédagogiques en un clic</p>
+  </header>
+
+  <div class="tools-grid">
+
+    <a class="tool-card" href="http://127.0.0.1:5001" target="_blank">
+      <div class="icon">🥸</div>
+      <div class="name">Prof Virtuel</div>
+      <div class="desc">QCM & questions ouvertes générés depuis tes notes Slite</div>
+      <div class="arrow">Ouvrir →</div>
+    </a>
+
+    <a class="tool-card" href="http://127.0.0.1:5003" target="_blank">
+      <div class="icon">🎙️</div>
+      <div class="name">Synthèse Audio</div>
+      <div class="desc">Transforme tes notes en narration MP3 avec les voix OpenAI</div>
+      <div class="arrow">Ouvrir →</div>
+    </a>
+
+  </div>
+
+
+  <!-- Bouton Claude Code flottant -->
+  <button class="claude-fab" onclick="ouvrirClaude()">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <rect x="11" y="2"  width="2" height="20" rx="1"/>
+      <rect x="11" y="2"  width="2" height="20" rx="1" transform="rotate(45 12 12)"/>
+      <rect x="11" y="2"  width="2" height="20" rx="1" transform="rotate(90 12 12)"/>
+      <rect x="11" y="2"  width="2" height="20" rx="1" transform="rotate(135 12 12)"/>
+    </svg>
+    Claude
+  </button>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  async function ouvrirClaude() {
+    try {
+      const res = await fetch("/ouvrir-claude");
+      const data = await res.json();
+      if (data.ok) {
+        afficherToast("Terminal ouvert avec Claude Code ✓");
+      } else {
+        afficherToast("Erreur : " + (data.erreur || "impossible d'ouvrir Terminal"));
+      }
+    } catch(e) {
+      afficherToast("Erreur réseau");
+    }
+  }
+
+  function afficherToast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("visible");
+    setTimeout(() => el.classList.remove("visible"), 2800);
+  }
+</script>
+</body>
+</html>
